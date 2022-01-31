@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@MatthewsMike"],
+  "config_flow": false,
+  "dependencies": [],
+  "documentation": "https://github.com/MatthewsMike/home-assistant-custom-components",
+  "domain": "ns_power_outages",
+  "iot_class": "cloud_polling",
+  "name": "NS Power Outage Tracker",
+  "requirements": [],
+  "version": "0.0.1"
+}
