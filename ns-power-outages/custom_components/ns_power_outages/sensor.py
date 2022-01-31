@@ -21,6 +21,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.info("Logger Initialized")
 # Time between updating data from GitHub
 SCAN_INTERVAL = timedelta(minutes=15)
 
@@ -45,7 +46,7 @@ class NSPowerOutagesSensor(Entity):
         _LOGGER.info("Custom Sensor Initializing")
         self.session = session
         self.attrs: Dict[str, int] = {'Outages': -1, 'AffectedCustomers': -1}
-        self._name = "ns_power_outages"
+        self._name = "Nova Scotia Power Outages"
         self._state = "Online"
         self._available = True
 
