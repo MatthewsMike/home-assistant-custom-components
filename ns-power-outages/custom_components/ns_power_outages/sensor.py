@@ -33,11 +33,11 @@ async def async_setup_platform(
     """Set up the sensor platform."""
     _LOGGER.info("Custom Sensor async_setup_platform called")
     session = async_get_clientsession(hass)
-    sensor = NSPowerOutageSensor(session)
+    sensor = NSPowerOutagesSensor(session)
     async_add_entities([sensor], update_before_add=True)
 
 
-class NSPowerOutageSensor(Entity):
+class NSPowerOutagesSensor(Entity):
     """Representation of a NS Power Outage sensor."""
 
     def __init__(self, session):
@@ -45,7 +45,7 @@ class NSPowerOutageSensor(Entity):
         _LOGGER.info("Custom Sensor Initializing")
         self.session = session
         self.attrs: Dict[str, int] = {'Outages': -1, 'AffectedCustomers': -1}
-        self._name = "ns_power_outage"
+        self._name = "ns_power_outages"
         self._state = "Online"
         self._available = True
 
