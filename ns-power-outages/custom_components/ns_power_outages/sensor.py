@@ -95,6 +95,7 @@ class NSPowerOutagesSensor(Entity):
                 self.attrs['AffectedCustomers'] = int(data['summaryFileData']['total_cust_a']['val'])
                 self.attrs['Outages'] = int(data['summaryFileData']['total_outages'])
                 self._available = True
+                self._state = "Online"
             except:
                 self._available = False
                 self._state = "Offline"
