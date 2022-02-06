@@ -21,7 +21,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.info("Logger Initialized")
 # Time between updating data from GitHub
 SCAN_INTERVAL = timedelta(minutes=15)
 
@@ -32,7 +31,6 @@ async def async_setup_platform(
     discovery_info: Optional[DiscoveryInfoType] = None,
 ) -> None:
     """Set up the sensor platform."""
-    _LOGGER.info("Custom Sensor async_setup_platform called")
     session = async_get_clientsession(hass)
     sensor = NSPowerOutagesSensor(session)
     async_add_entities([sensor], update_before_add=True)
@@ -43,7 +41,6 @@ class NSPowerOutagesSensor(Entity):
 
     def __init__(self, session):
         super().__init__()
-        _LOGGER.info("Custom Sensor Initializing")
         self.session = session
         self.attrs: Dict[str, int] = {'Outages': -1, 'AffectedCustomers': -1}
         self._name = "Nova Scotia Power Outages"
@@ -68,29 +65,44 @@ class NSPowerOutagesSensor(Entity):
 
     @property
     def state(self) -> Optional[str]:
+        """Returns the current state (Online/Offline) of the sensor"""
         return self._state
 
     @property
     def device_state_attributes(self) -> Dict[str, int]:
+        """Contains all the sensors states"""
         return self.attrs
 
-    def current_url(self):
+    def keys_url(self):
+        """Generates URL to load the key (called "directory") to access data from NS Power"""
+        self.timestamp = time.time()*1000
+        return f"http://outagemap.nspower.ca/resources/data/external/interval_generation_data/metadata.json?_={self.timestamp}"
+
+
+    def data_url(self):
         """Generates URL to load current data from NS Power"""
         url = f'http://outagemap.nspower.ca/resources/data/external/interval_generation_data/' + \
-                f'{datetime.now(timezone.utc).strftime("%Y_%m_%d_%H_%M_00")}/data.json?_=' + \
-                str(int(time.time()*1000))
+                f'{self.key}/data.json?_={self.timestamp + 1}'
         return url
 
-    async def fetch(self, session):
-        async with session.get(self.current_url()) as response:
+    async def fetch_keys(self, session):
+        """Returns response body containing keys to access data on subsequent requests"""
+        async with session.get(self.keys_url()) as response:
             return await response.text()
 
+    async def fetch_data(self, session):
+        """Returns primary data from NS power"""
+        async with session.get(self.data_url()) as response:
+            return await response.text()
 
     async def async_update(self):
+        """Get latest data and save it to self.attrs for access by Home Assistant"""
         async with self.session as session:
             try:
                 _LOGGER.info("Updating Sensor values.")
-                result = await self.fetch(session)
+                keys = await self.fetch_keys(session)
+                self.key = json.loads(keys)['directory']
+                result = await self.fetch_data(session)
                 data = json.loads(result)
                 self.attrs['AffectedCustomers'] = int(data['summaryFileData']['total_cust_a']['val'])
                 self.attrs['Outages'] = int(data['summaryFileData']['total_outages'])
