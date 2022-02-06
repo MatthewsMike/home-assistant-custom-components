@@ -97,19 +97,18 @@ class NSPowerOutagesSensor(Entity):
 
     async def async_update(self):
         """Get latest data and save it to self.attrs for access by Home Assistant"""
-        async with self.session as session:
-            try:
-                _LOGGER.info("Updating Sensor values.")
-                keys = await self.fetch_keys(session)
-                self.key = json.loads(keys)['directory']
-                result = await self.fetch_data(session)
-                data = json.loads(result)
-                self.attrs['AffectedCustomers'] = int(data['summaryFileData']['total_cust_a']['val'])
-                self.attrs['Outages'] = int(data['summaryFileData']['total_outages'])
-                self._available = True
-                self._state = "Online"
-            except:
-                self._available = False
-                self._state = "Offline"
-                _LOGGER.exception("Error retrieving data from NS Power.")
+        try:
+            _LOGGER.info("Updating Sensor values.")
+            keys = await self.fetch_keys(self.session)
+            self.key = json.loads(keys)['directory']
+            result = await self.fetch_data(self.session)
+            data = json.loads(result)
+            self.attrs['AffectedCustomers'] = int(data['summaryFileData']['total_cust_a']['val'])
+            self.attrs['Outages'] = int(data['summaryFileData']['total_outages'])
+            self._available = True
+            self._state = "Online"
+        except:
+            self._available = False
+            self._state = "Offline"
+            _LOGGER.exception("Error retrieving data from NS Power.")
 
