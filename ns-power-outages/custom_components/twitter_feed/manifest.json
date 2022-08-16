@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@MatthewsMike"],
+  "config_flow": false,
+  "dependencies": [],
+  "documentation": "https://github.com/MatthewsMike/home-assistant-custom-components",
+  "domain": "twitter_feed",
+  "iot_class": "cloud_polling",
+  "name": "Twitter Feed",
+  "requirements": [],
+  "version": "0.0.1"
+}
