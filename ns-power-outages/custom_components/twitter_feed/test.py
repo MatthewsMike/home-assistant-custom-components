@@ -1,7 +1,8 @@
 import configparser
-
+from collections import deque
+from time import sleep
 import tweepy
-import pprint
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -15,10 +16,8 @@ client = tweepy.Client(
 )
 
 accounts = {}
-accounts[1279816776289792000] = "@HRFE_Incidents"
-accounts[465512204] = "@HalifaxReTails"
-accounts[90450219] = "@HfxRegPolice"
-accounts[4159788513] = "@HRMFireNews"
+display_tweets = deque([""]*5, maxlen=10)
+max_id = 0
 
 def pretty_date(time=False):
     """
@@ -63,31 +62,35 @@ def pretty_date(time=False):
         return str(day_diff // 30) + " months ago"
     return str(day_diff // 365) + " years ago"
 
+while True:
+    # Client.get_home_timeline(*, end_time=None, exclude=None, expansions=None, max_results=None, media_fields=None, pagination_token=None, place_fields=None, poll_fields=None, since_id=None, start_time=None, tweet_fields=None, until_id=None, user_fields=None, user_auth=True)
+    response = client.get_home_timeline(
+        max_results=10,
+        since_id=max_id,
+        tweet_fields=["entities", "source", "author_id", "attachments", "created_at", "geo"],
+        expansions=['entities.mentions.username','author_id'],
+        user_fields=['username'],
+    )
+    if len(response.includes.get('users',[])) > 0:
+        for user in response.includes['users']:
+            accounts[user.id] = user.username
 
-# Client.get_home_timeline(*, end_time=None, exclude=None, expansions=None, max_results=None, media_fields=None, pagination_token=None, place_fields=None, poll_fields=None, since_id=None, start_time=None, tweet_fields=None, until_id=None, user_fields=None, user_auth=True)
-response = client.get_home_timeline(
-    max_results=10,
-    tweet_fields=["entities", "source", "author_id", "attachments", "created_at", "geo"],
-    expansions=['entities.mentions.username'],
-    user_fields=['username'],
-)
+    tweets = response.data
+    print(f"Got {len(tweets) if tweets is not None else 0} Tweets")
+    if tweets:
+        for tweet in tweets:
+            t = f"""@{accounts[tweet.author_id]} - {pretty_date(tweet.created_at)}
+            {tweet.text} {tweet.attachments or ""}
+            """
+            if tweet.author_id == 1279816776289792000 and "timberlea" not in tweet.text.lower():
+                continue
+            display_tweets.appendleft(t)
+            if tweet.id > max_id:
+                max_id = tweet.id
 
-tweets = response.data
-good_tweets = []
-for tweet in tweets:
-    t = f"""{accounts[tweet.author_id]} - {pretty_date(tweet.created_at)}
-    {tweet.text} {tweet.attachments or ""}
-    """
-    if tweet.author_id == 1279816776289792000 and "timberlea" not in tweet.text.lower():
-        continue
-    good_tweets.append(t)
-
-
-for t in good_tweets:
-    print(t + "\n")
+    print(list(display_tweets))
+    sleep(5)
 
 
 #Next Verify format that might look good on home assistant
-#Dynamically populate Author table if key not found
-#Cache checking time to on get newer tweets
-#Cache tweets to display and keep a rolling buffer of 5? newest tweets
+#--Not many options. Maybe log each tweet as event, then use log book card to show history of tweets.  No need for queue then.?
